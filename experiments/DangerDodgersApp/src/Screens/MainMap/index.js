@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Map from '../../Components/Map';
-import { View } from 'react-native';
+import { Text, View } from 'react-native';
 import { StyleSheet, PermissionsAndroid } from 'react-native';
 import { FAB } from 'react-native-paper';
 import Geolocation from 'react-native-geolocation-service';
@@ -33,26 +33,31 @@ const MainMap = (props) => {
   }
 
   useEffect(() => {
-    const beginLocationUpdates = () =>
-      setInterval(() => {
-        // locationHandler();
-      }, locationUpdatePeriodMs)
+    // const beginLocationUpdates = () =>
+    //   setInterval(() => {
+    //     // locationHandler();
+    //   }, locationUpdatePeriodMs)
 
-    const initializeLocationServices = async () => {
-      // Initially update and then continuously pull location after that.
-      // locationHandler();
-      beginLocationUpdates();
-    }
+    // const initializeLocationServices = async () => {
+    //   // Initially update and then continuously pull location after that.
+    //   // locationHandler();
+    //   beginLocationUpdates();
+    // }
 
-    initializeLocationServices();
+    // initializeLocationServices();
   }, [])
 
   const styles = StyleSheet.create({
   });
 
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <Map latitude={latitude} longitude={longitude}></Map>
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end' }}>
+      <View style={{ width: '100%', flexGrow: 1 }}>
+        <Map latitude={latitude} longitude={longitude}></Map>
+      </View>
+      { props.children && <View style={{ width: '100%' }}>
+        { props.children }
+      </View> }
     </View>
   )
 };

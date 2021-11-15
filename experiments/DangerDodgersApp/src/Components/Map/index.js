@@ -539,14 +539,14 @@ const styles = StyleSheet.create({
         position: 'absolute',
         margin: 16,
         right: 0,
-        bottom: 130,
+        bottom: 70,
         backgroundColor: '#ffffff'
     },
     reportFab: {
         position: 'absolute',
         margin: 16,
         right: 0,
-        bottom: 60,
+        bottom: 0,
     }
 });
 
