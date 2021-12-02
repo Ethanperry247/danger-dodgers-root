@@ -1,11 +1,12 @@
 import MapView, { Marker } from 'react-native-maps';
-import React, { useRef, useState } from 'react';
-import { StyleSheet } from "react-native";
-import { FAB } from 'react-native-paper';
+import React, { useRef, useState, useContext } from 'react';
+import { StyleSheet, Text, View } from "react-native";
+import { FAB, Modal, Portal } from 'react-native-paper';
 import Heat from '../HeatMap';
 import CurrentPositionMarker from '../CurrentPositionMarker';
 import AlertMarker from '../AlertMarker';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import RecordRideBar from '../../Components/RecordRideBar';
+import AuthContext from '../../Helpers/Auth';
 
 const mapStyle = [
     {
@@ -266,7 +267,7 @@ const mapStyle = [
             }
         ]
     }
-]
+];
 
 const mapStyleLight = [
     {
@@ -472,9 +473,11 @@ const defaultMapDelta = {
 }
 
 const Map = (props) => {
-    const { latitude, longitude } = props;
+    const context = useContext(AuthContext);
+    const { latitude, longitude, altitude } = props;
     const mapRef = useRef(null);
     const [alerts, setAlerts] = useState([]);
+    const [heatmapVisible, setHeatmapVisible] = useState(false);
 
     const alignmentHandler = () => {
         mapRef?.current?.animateToRegion({
@@ -487,10 +490,33 @@ const Map = (props) => {
     const quickAddHandler = () => {
         alignmentHandler();
 
-        setTimeout(() => {
-            setAlerts([...alerts, <AlertMarker key={alerts.length} latlong={{latitude, longitude}}></AlertMarker>]);
-        }, recenterAnimationDurationMs);
+        const createReport = async () => {
+            const data = await context.useAuthorizedPost('/report/', {
+                latitude: latitude,
+                longitude: longitude
+            });
+            if (data.state === 'SUCCESS') {
+                console.log(data)
+                setTimeout(() => {
+                    setAlerts([...alerts, <AlertMarker key={alerts.length} latlong={{ latitude, longitude }}></AlertMarker>]);
+                }, recenterAnimationDurationMs);
+            }
+        };
+
+        createReport();
     };
+
+    const openLayerHandler = () => {
+        setHeatmapVisible(true)
+    }
+
+    const closeLayerHandler = () => {
+        setHeatmapVisible(false)
+    }
+
+    const activityHandler = () => {
+
+    }
 
     return (
         <>
@@ -516,6 +542,18 @@ const Map = (props) => {
                 }}></CurrentPositionMarker>
                 {alerts}
             </MapView>
+            <Portal>
+                <Modal visible={heatmapVisible} onDismiss={closeLayerHandler} style={styles.selector}>
+                    <View>
+                        <View>
+                            <Text>
+                                This is a menu!
+                            </Text>
+                        </View>
+                    </View>
+                </Modal>
+            </Portal>
+            <RecordRideBar latitude={latitude} longitude={longitude} altitude={altitude}></RecordRideBar>
             <FAB
                 style={styles.reportFab}
                 large
@@ -523,10 +561,22 @@ const Map = (props) => {
                 onPress={quickAddHandler}
             />
             <FAB
-                style={styles.alignFab}
+                style={styles.activityFab}
                 large
+                icon="play"
+                onPress={activityHandler}
+            />
+            <FAB
+                style={styles.alignFab}
+                small
                 icon="crosshairs-gps"
                 onPress={alignmentHandler}
+            />
+            <FAB
+                style={styles.layerFab}
+                small
+                icon="layers-outline"
+                onPress={openLayerHandler}
             />
         </>);
 }
@@ -535,19 +585,37 @@ const styles = StyleSheet.create({
     map: {
         ...StyleSheet.absoluteFillObject,
     },
-    alignFab: {
+    reportFab: {
+        position: 'absolute',
+        margin: 16,
+        right: 0,
+        bottom: 0,
+    },
+    activityFab: {
         position: 'absolute',
         margin: 16,
         right: 0,
         bottom: 70,
         backgroundColor: '#ffffff'
     },
-    reportFab: {
+    layerFab: {
         position: 'absolute',
         margin: 16,
         right: 0,
-        bottom: 0,
-    }
+        top: 0,
+        backgroundColor: '#ffffff'
+    },
+    alignFab: {
+        position: 'absolute',
+        margin: 16,
+        right: 0,
+        top: 50,
+        backgroundColor: '#ffffff'
+    },
+    selector: {
+        backgroundColor: 'white',
+        top: '30%'
+    },
 });
 
 export default Map;

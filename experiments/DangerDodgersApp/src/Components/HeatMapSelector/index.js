@@ -1,25 +1,22 @@
 import * as React from "react";
-import { List } from 'react-native-paper';
+import { List, Modal, Portal } from 'react-native-paper';
 import { StyleSheet, Text, View } from "react-native";
 
 const HeatMapSelector = (props) => {
-    const [expanded, setExpanded] = React.useState(false);
-
-    const handlePress = () => {
-        console.log("Hello!")
-        setExpanded(!expanded)
-    
-    };
-
+    const [visible, setVisible] = React.useState(props.open);
 
     return (
-        <View style={styles.selector}>
-            <View onPress={handlePress}>
-                <Text>
-                    This is a menu!
-                </Text>
-            </View>
-        </View>
+        <Portal>
+            <Modal visible={visible} onDismiss={() => setVisible(false)} style={styles.selector}>
+                <View>
+                    <View>
+                        <Text>
+                            This is a menu!
+                        </Text>
+                    </View>
+                </View>
+            </Modal>
+        </Portal>
     );
 }
 
@@ -27,7 +24,9 @@ export default HeatMapSelector;
 
 const styles = StyleSheet.create({
     selector: {
-        height: 60
+        backgroundColor: 'white',
+        // height: '50%',
+        top: '30%'
     },
 });
 

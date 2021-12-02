@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Appbar, Headline, Modal, Portal } from 'react-native-paper';
 
-const RecordRideBar = () => {
+const RecordRideBar = (props) => {
     // Visibility state for our modal.
     const [visible, setVisible] = useState(false);
     const [recording, setRecording] = useState(false);
@@ -12,6 +12,22 @@ const RecordRideBar = () => {
     const [currentTime, setCurrentTime] = useState(Date.now());
     const [startTime, setStartTime] = useState(Date.now());
     const [pausedDuration, setPausedDuration] = useState(Date.now());
+    const [persistData, setPersistData] = useState([]);
+    const [timeSinceOrigin, setTimeSinceOrigin] = useState(0);
+    const { latitude, longitude, altitude } = props;
+
+
+    const persistPhysicalData = () => {
+        console.log("Persisting data.");
+        setPersistData([...persistData, {
+            latitude,
+            longitude,
+            altitude,
+            timestamp: timeSinceOrigin
+        }]);
+        console.log(persistData);
+        setTimeSinceOrigin(timeSinceOrigin + 1);
+    };
 
     const handleHideModal = () => {
         setVisible(false);
@@ -20,6 +36,15 @@ const RecordRideBar = () => {
     const beginInterval = () => {
         setIntervalState(setInterval(() => {
             setCurrentTime(Date.now());
+            persistPhysicalData();
+            setPersistData([...persistData, {
+                latitude,
+                longitude,
+                altitude,
+                timestamp: timeSinceOrigin
+            }]);
+            console.log(persistData);
+            setTimeSinceOrigin(timeSinceOrigin + 1);
         }, 1000));
     }
 
@@ -49,13 +74,28 @@ const RecordRideBar = () => {
         beginInterval();
     };
 
+    useEffect(() => {
+        return () => {
+            clearInterval(intervalState);
+        };
+    }, [])
+
     const styles = StyleSheet.create({
+        container: {
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            width: 250,
+            height: 60,
+            margin: 15,
+            borderRadius: 200,
+            overflow: 'hidden'
+        },
         bar: {
-            width: '100%',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            height: 70
+            height: 70,
         },
         play: {
         },
@@ -101,7 +141,7 @@ const RecordRideBar = () => {
     };
 
     return (
-        <View>
+        <View style={styles.container}>
             <Portal>
                 <Modal
                     visible={visible}
