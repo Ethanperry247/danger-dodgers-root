@@ -20,6 +20,8 @@ target 'DangerDodgersApp' do
 
   pod 'react-native-geolocation', :path => '../node_modules/@react-native-community/geolocation'
 
+  pod 'react-native-slider', :path => '../node_modules/@react-native-community/slider'
+
   target 'DangerDodgersAppTests' do
     inherit! :complete
     # Pods for testing

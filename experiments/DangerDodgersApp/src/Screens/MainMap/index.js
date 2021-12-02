@@ -53,7 +53,7 @@ const MainMap = (props) => {
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end' }}>
       <View style={{ width: '100%', flexGrow: 1 }}>
-        <Map latitude={latitude} longitude={longitude} altitude={altitude}></Map>
+        <Map latitude={latitude} longitude={longitude} altitude={altitude} mapSettingValue={props.mapSettingValue}></Map>
       </View>
     </View>
   )

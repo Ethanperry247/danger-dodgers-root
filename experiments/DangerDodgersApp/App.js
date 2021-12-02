@@ -365,29 +365,27 @@ const App = ({ navigation }) => {
 
   return (
     <AuthContext.Provider value={context}>
-      <PaperProvider theme={theme}>
-        {state.userToken == null
-          ? <Login></Login>
-          : (<Portal.Host><UtilityBar navigation={navigation}></UtilityBar>
-            <Tab.Navigator
-              barStyle={bottomNavStyles.nav}
-              shifting={true}
-              sceneAnimationEnabled={false}>
-              <Tab.Screen name="Explore" children={() => <MainMap></MainMap>} options={{
-                tabBarIcon: 'home-account',
-              }} />
-              <Tab.Screen name="Create Report" component={Reports} options={{
-                tabBarIcon: 'alert-octagon-outline',
-              }} />
-              <Tab.Screen name="My Alerts" component={Alerts} options={{
-                tabBarIcon: 'bell-outline',
-              }} />
-              <Tab.Screen name="My Account" component={Account} options={{
-                tabBarIcon: 'account-circle-outline',
-              }} />
-            </Tab.Navigator>
-          </Portal.Host>)}
-      </PaperProvider>
+      {state.userToken == null
+        ? <Login></Login>
+        : (<Portal.Host><UtilityBar navigation={navigation}></UtilityBar>
+          <Tab.Navigator
+            barStyle={bottomNavStyles.nav}
+            shifting={true}
+            sceneAnimationEnabled={false}>
+            <Tab.Screen name="Explore" children={() => <MainMap></MainMap>} options={{
+              tabBarIcon: 'home-account',
+            }} />
+            <Tab.Screen name="Create Report" component={Reports} options={{
+              tabBarIcon: 'alert-octagon-outline',
+            }} />
+            <Tab.Screen name="My Alerts" component={Alerts} options={{
+              tabBarIcon: 'bell-outline',
+            }} />
+            <Tab.Screen name="My Account" component={Account} options={{
+              tabBarIcon: 'account-circle-outline',
+            }} />
+          </Tab.Navigator>
+        </Portal.Host>)}
     </AuthContext.Provider>
   );
 }
@@ -396,15 +394,17 @@ const Stack = createStackNavigator();
 
 const A = () => {
   return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{
-        headerShown: false
-      }}>
-        <Stack.Screen name="Home" component={App} />
-        <Stack.Screen name="About" component={About} />
-        <Stack.Screen name="Settings" component={Settings} />
-      </Stack.Navigator>
-    </NavigationContainer>);
+    <PaperProvider theme={theme}>
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={{
+          headerShown: false
+        }}>
+          <Stack.Screen name="Home" component={App} />
+          <Stack.Screen name="About" component={About} />
+          <Stack.Screen name="Settings" component={Settings} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </PaperProvider>);
 };
 
 export default A;

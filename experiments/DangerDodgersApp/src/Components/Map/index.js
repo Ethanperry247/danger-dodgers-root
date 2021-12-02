@@ -1,5 +1,5 @@
 import MapView, { Marker } from 'react-native-maps';
-import React, { useRef, useState, useContext } from 'react';
+import React, { useRef, useState, useContext, useEffect } from 'react';
 import { StyleSheet, Text, View } from "react-native";
 import { FAB, Modal, Portal } from 'react-native-paper';
 import Heat from '../HeatMap';
@@ -7,6 +7,7 @@ import CurrentPositionMarker from '../CurrentPositionMarker';
 import AlertMarker from '../AlertMarker';
 import RecordRideBar from '../../Components/RecordRideBar';
 import AuthContext from '../../Helpers/Auth';
+import Persist from '../../Helpers/Persist';
 
 const mapStyle = [
     {
@@ -487,6 +488,18 @@ const Map = (props) => {
         }, recenterAnimationDurationMs);
     }
 
+    useEffect(() => {
+        const getNearbyAlerts = async () => {
+            const radius = await Persist.retrieve('radius') ?? 0.5;
+            const data = await context.useAuthorizedGet(`/report/filter/lat/${latitude}/long/${longitude}/?radius=${radius}`);
+            if (data.state === 'SUCCESS') {
+                setAlerts([...alerts, data.content.map((content, index) => (<AlertMarker key={alerts.length + index} content={content}></AlertMarker>))]);
+            }
+        };
+
+        getNearbyAlerts();
+    }, [props.mapSettingValue]);
+
     const quickAddHandler = () => {
         alignmentHandler();
 
@@ -496,9 +509,8 @@ const Map = (props) => {
                 longitude: longitude
             });
             if (data.state === 'SUCCESS') {
-                console.log(data)
                 setTimeout(() => {
-                    setAlerts([...alerts, <AlertMarker key={alerts.length} latlong={{ latitude, longitude }}></AlertMarker>]);
+                    setAlerts([...alerts, <AlertMarker key={alerts.length} content={{ id: data.content.id, latitude: latitude, longitude: longitude }}></AlertMarker>]);
                 }, recenterAnimationDurationMs);
             }
         };

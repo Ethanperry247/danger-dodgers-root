@@ -72,6 +72,8 @@ const Update = () => {
   const context = useContext(AuthContext);
 
   const [visible, setVisible] = useState(false);
+  const showDialog = () => setVisible(true);
+  const hideDialog = () => setVisible(false);
   const [current, setCurrent] = useState(0);
 
   // Used for editing dialog.
@@ -83,9 +85,6 @@ const Update = () => {
   const [snackBarVisible, setSnackBarVisible] = useState(false);
   const onToggleSnackBar = () => setSnackBarVisible(!snackBarVisible);
   const onDismissSnackBar = () => setSnackBarVisible(false);
-
-  const showDialog = () => setVisible(true);
-  const hideDialog = () => setVisible(false);
 
   const updateHandler = async (index) => {
     await setCurrent(index);
@@ -125,6 +124,7 @@ const Update = () => {
     const data = await context.useAuthorizedPatch('/user/', {
       username: username,
       password: password,
+      // Spot for future improvement, could be implemented/organized differently:
       newUsername: current === 0 ? field : null,
       newPassword: current === 1 ? field : null,
       phone: current === 2 ? field : null,

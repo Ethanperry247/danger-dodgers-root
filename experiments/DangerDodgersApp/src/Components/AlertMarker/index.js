@@ -6,8 +6,7 @@ import AuthContext from "../../Helpers/Auth";
 
 const AlertMarker = (props) => {
     const context = useContext(AuthContext);
-    const { latitude, longitude } = props.latlong;
-    const { id } = props;
+    const { latitude, longitude, id, risk_level, type, description } = props.content;
 
     useEffect(() => {
     }, []);
@@ -17,18 +16,17 @@ const AlertMarker = (props) => {
     }
     
     const handleDrag = async (event) => {
-        console.log(event.nativeEvent.coordinate)
 
-        const data = await context.useAuthorizedPatch('/report/', {
-            latitude: latitude,
-            longitude: longitude
+        const data = await context.useAuthorizedPatch(`/report/${id}`, {
+            latitude: event.nativeEvent.coordinate.latitude,
+            longitude: event.nativeEvent.coordinate.longitude
         });
         if (data.state === 'SUCCESS') {
-
+            // TODO
         }
     };
 
-    return (<Marker onPress={markerPressHandler} draggable coordinate={props.latlong} onDragEnd={handleDrag}>
+    return (<Marker onPress={markerPressHandler} draggable coordinate={{ latitude: latitude, longitude: longitude }} onDragEnd={handleDrag}>
         <Icon name="map-marker-alert" size={40} color='#ff0000'></Icon>
     </Marker>);
 }
