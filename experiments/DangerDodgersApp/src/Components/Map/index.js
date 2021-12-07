@@ -1,4 +1,4 @@
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Circle, Marker, Polyline } from 'react-native-maps';
 import React, { useRef, useState, useContext, useEffect } from 'react';
 import { StyleSheet, Text, View } from "react-native";
 import { FAB, Modal, Portal } from 'react-native-paper';
@@ -479,6 +479,21 @@ const Map = (props) => {
     const mapRef = useRef(null);
     const [alerts, setAlerts] = useState([]);
     const [heatmapVisible, setHeatmapVisible] = useState(false);
+    const [displayOutline, setDisplayOutline] = useState(false);
+    const [togglePlay, setTogglePlay] = useState(false);
+    const [radius, setRadius] = useState(0.5);
+    const [showHeat, setShowHeat] = useState(false);
+    const [latDelta, setLatDelta] = useState(defaultMapDelta.latitudeDelta);
+    const [longDelta, setLongDelta] = useState(defaultMapDelta.longitudeDelta);
+    const [lineData, setLineData] = useState([]);
+
+    const handleNewDataPoint = (point) => {
+        if (point) {
+            setLineData([...lineData, point]);
+        } else {
+            setLineData([]);
+        }
+    }
 
     const alignmentHandler = () => {
         mapRef?.current?.animateToRegion({
@@ -486,19 +501,33 @@ const Map = (props) => {
             longitude,
             ...defaultMapDelta
         }, recenterAnimationDurationMs);
-    }
+    };
+
+    const getNearbyAlerts = async () => {
+        const radius = Number(await Persist.retrieve('radius') ?? 0.5) * 1000.0;
+        const data = await context.useAuthorizedGet(`/report/filter/lat/${latitude}/long/${longitude}/?radius=${radius}`);
+        if (data.state === 'SUCCESS') {
+            setAlerts([...alerts, data.content.map((content, index) => (<AlertMarker key={alerts.length + index} content={content}></AlertMarker>))]);
+        }
+    };
+
+    const refreshAlerts = async () => {
+        const radius = Number(await Persist.retrieve('radius') ?? 0.5) * 1000.0;
+        const data = await context.useAuthorizedGet(`/report/filter/lat/${latitude}/long/${longitude}/?radius=${radius}`);
+        if (data.state === 'SUCCESS') {
+            await setAlerts([]);
+            setAlerts([data.content.map((content, index) => (<AlertMarker key={alerts.length + index} content={content}></AlertMarker>))]);
+        }
+
+        setRadius(radius);
+
+        const toggle = await Persist.retrieve('radius-toggle');
+        setDisplayOutline(toggle === 'on' ? true : false);
+    };
 
     useEffect(() => {
-        const getNearbyAlerts = async () => {
-            const radius = await Persist.retrieve('radius') ?? 0.5;
-            const data = await context.useAuthorizedGet(`/report/filter/lat/${latitude}/long/${longitude}/?radius=${radius}`);
-            if (data.state === 'SUCCESS') {
-                setAlerts([...alerts, data.content.map((content, index) => (<AlertMarker key={alerts.length + index} content={content}></AlertMarker>))]);
-            }
-        };
-
-        getNearbyAlerts();
-    }, [props.mapSettingValue]);
+        refreshAlerts();
+    }, []);
 
     const quickAddHandler = () => {
         alignmentHandler();
@@ -509,8 +538,8 @@ const Map = (props) => {
                 longitude: longitude
             });
             if (data.state === 'SUCCESS') {
-                setTimeout(() => {
-                    setAlerts([...alerts, <AlertMarker key={alerts.length} content={{ id: data.content.id, latitude: latitude, longitude: longitude }}></AlertMarker>]);
+                setTimeout(async () => {
+                    setAlerts([...alerts, <AlertMarker key={alerts.length} content={{ id: data.content.id, latitude: latitude, longitude: longitude, frequency: 1, newAlert: true }}></AlertMarker>]);
                 }, recenterAnimationDurationMs);
             }
         };
@@ -519,16 +548,29 @@ const Map = (props) => {
     };
 
     const openLayerHandler = () => {
-        setHeatmapVisible(true)
+        // setHeatmapVisible(true);
+        // alignmentHandler();
+        setShowHeat(!showHeat);
     }
 
     const closeLayerHandler = () => {
-        setHeatmapVisible(false)
+        // setHeatmapVisible(false);
     }
 
     const activityHandler = () => {
-
+        setTogglePlay(true);
     }
+
+    const refreshHandler = () => {
+        alignmentHandler();
+
+        refreshAlerts();
+    }
+
+    // const regionChangeHandler = (region) => {
+    //     setLatDelta(region.latitudeDelta)
+    //     setLongDelta(region.longitudeDelta)
+    // };
 
     return (
         <>
@@ -541,18 +583,27 @@ const Map = (props) => {
                     longitude,
                     ...defaultMapDelta
                 }}
-                region={{
-                    latitude,
-                    longitude,
-                    ...defaultMapDelta
-                }}
+                // region={{
+                //     latitude,
+                //     longitude,
+                //     latitudeDelta: latDelta,
+                //     longitudeDelta: longDelta
+                // }}
+                userLocationPriority={'high'}
+                showsUserLocation={true}
+                userLocationUpdateInterval={2000}
             >
-                <Heat></Heat>
-                <CurrentPositionMarker latlong={{
+                {showHeat && <Heat></Heat>}
+                {displayOutline && <Circle strokeWidth={2} strokeColor="#222222" fillColor="#aaaaaa55" style={{}} center={{
                     latitude,
                     longitude
-                }}></CurrentPositionMarker>
+                }} radius={radius}></Circle>}
                 {alerts}
+                {lineData.length > 0 && <Polyline
+                    coordinates={lineData}
+                    strokeColor="#000"
+                    strokeWidth={6}
+                />}
             </MapView>
             <Portal>
                 <Modal visible={heatmapVisible} onDismiss={closeLayerHandler} style={styles.selector}>
@@ -565,7 +616,7 @@ const Map = (props) => {
                     </View>
                 </Modal>
             </Portal>
-            <RecordRideBar latitude={latitude} longitude={longitude} altitude={altitude}></RecordRideBar>
+            {togglePlay && <RecordRideBar latitude={latitude} longitude={longitude} altitude={altitude} handleNewDataPoint={handleNewDataPoint}></RecordRideBar>}
             <FAB
                 style={styles.reportFab}
                 large
@@ -577,6 +628,12 @@ const Map = (props) => {
                 large
                 icon="play"
                 onPress={activityHandler}
+            />
+            <FAB
+                style={styles.refreshFab}
+                small
+                icon="refresh"
+                onPress={refreshHandler}
             />
             <FAB
                 style={styles.alignFab}
@@ -622,6 +679,13 @@ const styles = StyleSheet.create({
         margin: 16,
         right: 0,
         top: 50,
+        backgroundColor: '#ffffff'
+    },
+    refreshFab: {
+        position: 'absolute',
+        margin: 16,
+        right: 0,
+        top: 100,
         backgroundColor: '#ffffff'
     },
     selector: {

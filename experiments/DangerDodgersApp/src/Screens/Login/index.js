@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
-import { TextInput, ToggleButton, Button, Snackbar } from 'react-native-paper';
-import { View, Text, StyleSheet } from 'react-native';
+import { TextInput, ToggleButton, Button, Snackbar, Headline } from 'react-native-paper';
+import { View, Text, StyleSheet, Image, ScrollView } from 'react-native';
 import AuthContext from '../../Helpers/Auth';
 
 const Login = () => {
@@ -32,13 +32,16 @@ const Login = () => {
                 label="Email"
                 value={email}
                 onChangeText={text => setEmail(text)}
+                style={styles.input}
             />
             <TextInput
                 label="Password"
+                secureTextEntry
                 value={password}
                 onChangeText={text => setPassword(text)}
+                style={styles.input}
             />
-            <Button mode="outlined" onPress={handleLogIn}>
+            <Button style={styles.input} mode="contained" onPress={handleLogIn}>
                 Sign In
             </Button>
             <Snackbar
@@ -85,31 +88,36 @@ const Login = () => {
         return (<View style={styles.fullheight}>
             <TextInput
                 label="Email"
-                mode="outlined"
                 value={email}
                 onChangeText={text => setEmail(text)}
+                style={styles.input}
             />
             <TextInput
                 label="Password"
                 value={password}
+                secureTextEntry
                 onChangeText={text => setPassword(text)}
+                style={styles.input}
             />
             <TextInput
                 label="First Name"
                 value={firstName}
                 onChangeText={text => setFirstName(text)}
+                style={styles.input}
             />
             <TextInput
                 label="Last Name"
                 value={lastName}
                 onChangeText={text => setLastName(text)}
+                style={styles.input}
             />
             <TextInput
                 label="Phone Number"
                 value={phone}
                 onChangeText={text => setPhone(text)}
+                style={styles.input}
             />
-            <Button mode="outlined" onPress={handleSignUp}>
+            <Button style={styles.input} mode="contained" onPress={handleSignUp}>
                 Sign Up
             </Button>
             <Snackbar
@@ -126,27 +134,54 @@ const Login = () => {
         </View>);
     };
 
-    return(<View style={styles.fill}>
-        <ToggleButton.Row onValueChange={value => setValue(value)} value={value}>
-            <ToggleButton icon={() => <Text>Sign In</Text>} value="login"></ToggleButton>
-            <ToggleButton icon={() => <Text>Sign Up</Text>} value="signup">Sign Up</ToggleButton>
-        </ToggleButton.Row>
-        {
-            value == 'login' 
-                ? <LoginMenu></LoginMenu>
-                : <SignUpMenu></SignUpMenu>
-        }
-    </View>
+    return(<ScrollView style={styles.fill}>
+        <View style={styles.center}>
+            <Image style={styles.image} source={require('../../Assets/logo.png')}></Image>
+        </View>
+        <View style={styles.login}>
+            <ToggleButton.Row onValueChange={value => setValue(value)} value={value}>
+                <ToggleButton style={styles.toggleButton} icon={() => <Text style={styles.toggleText}>Sign In</Text>} value="login"></ToggleButton>
+                <ToggleButton style={styles.toggleButton} icon={() => <Text style={styles.toggleText}>Sign Up</Text>} value="signup">Sign Up</ToggleButton>
+            </ToggleButton.Row>
+        </View>
+        <View style={{marginBottom: 64}}>
+            {
+                value == 'login' 
+                    ? <LoginMenu></LoginMenu>
+                    : <SignUpMenu></SignUpMenu>
+            }
+        </View>
+    </ScrollView>
 )};
 
 const styles = StyleSheet.create({
     snackbar: {
         position: 'absolute',
-        bottom: 30
+        bottom: 250
     }, fill: {
         ...StyleSheet.absoluteFillObject,
+        padding: 16,
     }, fullheight: {
         height: '100%' 
+    }, login: {
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+    }, toggleText: {
+        color: '#000000'
+    }, input: {
+        margin: 16
+    }, toggleButton: {
+        width: '40%',
+        margin: 10,
+        // borderRadius: '5%'
+    }, image: {
+        width: '90%',
+        height: 200
+    }, center: {
+        width: '100%',
+        alignItems: 'center',
+        padding: 16
     }
 });
 

@@ -1,10 +1,11 @@
-import * as React from 'react';
-import { useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Appbar, Headline, Modal, Portal } from 'react-native-paper';
+import { Appbar, Headline, Dialog, Portal, Paragraph, Button, Snackbar } from 'react-native-paper';
+import AuthContext from '../../Helpers/Auth';
 
 const RecordRideBar = (props) => {
     // Visibility state for our modal.
+    const context = useContext(AuthContext);
     const [visible, setVisible] = useState(false);
     const [recording, setRecording] = useState(false);
     const [paused, setPaused] = useState(false);
@@ -14,37 +15,16 @@ const RecordRideBar = (props) => {
     const [pausedDuration, setPausedDuration] = useState(Date.now());
     const [persistData, setPersistData] = useState([]);
     const [timeSinceOrigin, setTimeSinceOrigin] = useState(0);
-    const { latitude, longitude, altitude } = props;
+    const [infoBarVisible, setInfoBarVisible] = useState(false);
+    const { latitude, longitude, altitude, handleNewDataPoint } = props;
 
-
-    const persistPhysicalData = () => {
-        console.log("Persisting data.");
-        setPersistData([...persistData, {
-            latitude,
-            longitude,
-            altitude,
-            timestamp: timeSinceOrigin
-        }]);
-        console.log(persistData);
-        setTimeSinceOrigin(timeSinceOrigin + 1);
-    };
-
-    const handleHideModal = () => {
+    const hideDialog = () => {
         setVisible(false);
     };
 
     const beginInterval = () => {
         setIntervalState(setInterval(() => {
             setCurrentTime(Date.now());
-            persistPhysicalData();
-            setPersistData([...persistData, {
-                latitude,
-                longitude,
-                altitude,
-                timestamp: timeSinceOrigin
-            }]);
-            console.log(persistData);
-            setTimeSinceOrigin(timeSinceOrigin + 1);
         }, 1000));
     }
 
@@ -59,6 +39,14 @@ const RecordRideBar = (props) => {
         clearInterval(intervalState);
         setRecording(false);
         setPaused(false);
+        setTimeSinceOrigin(0);
+        setPersistData([]);
+        handleNewDataPoint(null);
+    };
+
+    const onTryStop = () => {
+        onPause();
+        setVisible(true);
     };
 
     const onPause = () => {
@@ -74,11 +62,59 @@ const RecordRideBar = (props) => {
         beginInterval();
     };
 
+    const handleCancel = () => {
+        onStop();
+        hideDialog();
+    };
+
+    const handleContinue = () => {
+        onResume();
+        hideDialog();
+    };
+
+    const handleAnalyze = async () => {
+        hideDialog();
+
+        if (persistData.length < 4) {
+            return;
+        }
+
+        const data = await context.useAuthorizedPost('/jobs/recording', {
+            public: false,
+            recording: persistData
+        });
+
+        if (data.state === 'SUCCESS') {
+            // The case in which the request succeeds, give the user a message accordingly.
+            onToggleInfoBar();
+        }
+
+        onStop();
+    };
+
+    const onToggleInfoBar = () => setInfoBarVisible(!infoBarVisible);
+
+    const onDismissInfoBar = () => setInfoBarVisible(false);
+
     useEffect(() => {
+        // onStart();
         return () => {
             clearInterval(intervalState);
         };
     }, [])
+
+    useEffect(() => {
+        setTimeSinceOrigin(timeSinceOrigin + 1);
+        if (timeSinceOrigin % 2 === 0) {
+            setPersistData([...persistData, {
+                latitude,
+                longitude,
+                altitude: altitude,
+                time: timeSinceOrigin
+            }]);
+            handleNewDataPoint({latitude, longitude});
+        }
+    }, [currentTime])
 
     const styles = StyleSheet.create({
         container: {
@@ -95,15 +131,15 @@ const RecordRideBar = (props) => {
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            height: 70,
+            // height: 100,
         },
         play: {
         },
         modal: {
         },
         modalContainer: {
-            backgroundColor: 'white',
-            padding: 20
+            // backgroundColor: 'white',
+            // padding: 20
         },
         recording: {
             display: 'flex',
@@ -115,6 +151,9 @@ const RecordRideBar = (props) => {
             padding: 0,
             paddingLeft: 20,
             paddingRight: 20,
+        }, snackbar: {
+            position: 'absolute',
+            bottom: 30
         }
     });
 
@@ -135,25 +174,25 @@ const RecordRideBar = (props) => {
             </View>
             <Appbar.Action
                 icon="stop"
-                onPress={onStop}
+                onPress={onTryStop}
             />
         </>);
     };
 
-    return (
+    return (<>
         <View style={styles.container}>
             <Portal>
-                <Modal
-                    visible={visible}
-                    onDismiss={handleHideModal}
-                    contentContainerStyle={styles.modalContainer}
-                    style={styles.modal}
-                >
-                    <Headline>Time</Headline>
-                    <Text>
-                        Time
-                    </Text>
-                </Modal>
+                <Dialog visible={visible} onDismiss={hideDialog}>
+                    <Dialog.Title>Recording Finished?</Dialog.Title>
+                    <Dialog.Content>
+                        <Paragraph>If you are finished with your recording, select yes to generate danger analysis of your ride. Otherwise, you can continue recording, or cancel the recording.</Paragraph>
+                    </Dialog.Content>
+                    <Dialog.Actions>
+                        <Button onPress={handleCancel}>Cancel Recording</Button>
+                        <Button onPress={handleContinue}>No</Button>
+                        <Button onPress={handleAnalyze}>Yes</Button>
+                    </Dialog.Actions>
+                </Dialog>
             </Portal>
             <Appbar style={styles.bar}>
                 {
@@ -161,18 +200,26 @@ const RecordRideBar = (props) => {
                         <Appbar.Action
                             style={styles.play}
                             size={40}
-                            icon="play-circle"
+                            icon="play"
                             onPress={onStart}
                         /> : <RecordingDisplay />
                 }
             </Appbar>
         </View>
-    )
+
+        <Snackbar
+            visible={infoBarVisible}
+            onDismiss={onDismissInfoBar}
+            duration={2000}
+            style={styles.snackbar} >
+            Recording analysis processing in background.
+        </Snackbar>
+    </>)
 };
 
 export default RecordRideBar;
 
-const Timer = ({currentTime, startTime}) => (
+const Timer = ({ currentTime, startTime }) => (
     <Headline>
         {
             (() => {

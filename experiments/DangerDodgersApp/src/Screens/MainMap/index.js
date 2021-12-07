@@ -21,30 +21,36 @@ const MainMap = (props) => {
           setLatitude(position.coords.latitude)
           setLongitude(position.coords.longitude)
           setSpeed(position.coords.speed)
-          setAltitude(position.coords.setAltitude)
+          setAltitude(position.coords.altitude)
         },
         (error) => {
           // See error code charts below.
           console.warn(error.code, error.message);
         },
-        { enableHighAccuracy: false, timeout: 15000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 3000 }
       );
     }).catch((e) => console.log(`An error occured! ${e}`))
   }
 
   useEffect(() => {
-    // const beginLocationUpdates = () =>
-    //   setInterval(() => {
-    //     // locationHandler();
-    //   }, locationUpdatePeriodMs)
+    let interval = null;
 
-    // const initializeLocationServices = async () => {
-    //   // Initially update and then continuously pull location after that.
-    //   // locationHandler();
-    //   beginLocationUpdates();
-    // }
+    const beginLocationUpdates = () =>
+    interval = setInterval(() => {
+        locationHandler();
+      }, locationUpdatePeriodMs)
 
-    // initializeLocationServices();
+    const initializeLocationServices = async () => {
+      // Initially update and then continuously pull location after that.
+      locationHandler();
+      beginLocationUpdates();
+    }
+
+    initializeLocationServices();
+
+    return (() => {
+      interval && clearInterval(interval)
+    });
   }, [])
 
   const styles = StyleSheet.create({

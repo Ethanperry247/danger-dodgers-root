@@ -61,6 +61,7 @@ const bottomNavStyles = StyleSheet.create({
 
 const App = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
+  const [userId, setUserId] = useState(null);
 
   const [state, dispatch] = useReducer(
     (prevState, action) => {
@@ -96,8 +97,27 @@ const App = ({ navigation }) => {
     return (status === 401);
   };
 
+  const setUser = async (token) => {
+    const res = await fetch(`${config.protocol}${config.serverPath}/user/`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    const json = await res.json();
+
+    if (res.status === 200 && json.id) {
+      setUserId(json.id);
+    }
+  };
+
   const context = useMemo(() => {
     return {
+      getUserId: () => {
+        return userId;
+      },
       signIn: async (creds) => {
         try {
           const res = await fetch(`${config.protocol}${config.serverPath}/user/login`, {
@@ -113,6 +133,7 @@ const App = ({ navigation }) => {
             setTimeout(() => {
               dispatch({ type: 'SIGN_IN', token: json.access_token });
               Perist.store('user-token', json.access_token);
+              setUser(json.access_token);
             }, 500);
 
             return {
@@ -152,7 +173,7 @@ const App = ({ navigation }) => {
 
           const json = await res.json();
 
-          if (json.detail && json.detail === 'ALREADY_EXISTS') {
+          if (json?.detail && json.detail === 'ALREADY_EXISTS') {
             return {
               state: 'ERROR',
               message: 'User already exists. Please visit the sign-in page instead.'
@@ -193,6 +214,7 @@ const App = ({ navigation }) => {
           if (res.status === 200) {
             const json = await res.json();
             dispatch({ type: 'SIGN_IN', token: json.access_token });
+            setUser(json.access_token);
           } else {
             // Log user out if the key is not current. 
             dispatch({ type: 'SIGN_OUT' });
@@ -334,6 +356,7 @@ const App = ({ navigation }) => {
           if (res.status === 200) {
             const json = await res.json();
             dispatch({ type: 'SIGN_IN', token: json.access_token });
+            setUser(json.access_token);
           } else {
             // Log user out if the key is not current. 
             dispatch({ type: 'SIGN_OUT' });
@@ -375,9 +398,9 @@ const App = ({ navigation }) => {
             <Tab.Screen name="Explore" children={() => <MainMap></MainMap>} options={{
               tabBarIcon: 'home-account',
             }} />
-            <Tab.Screen name="Create Report" component={Reports} options={{
+            {/* <Tab.Screen name="Create Report" component={Reports} options={{
               tabBarIcon: 'alert-octagon-outline',
-            }} />
+            }} /> */}
             <Tab.Screen name="My Alerts" component={Alerts} options={{
               tabBarIcon: 'bell-outline',
             }} />
